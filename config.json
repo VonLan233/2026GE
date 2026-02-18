@@ -1,0 +1,7 @@
+{
+  "courses": [
+    {"name": "课程名称关键词1", "priority": 1},
+    {"name": "课程名称关键词2", "priority": 2},
+    {"name": "课程名称关键词3", "priority": 3}
+  ]
+}
