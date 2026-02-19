@@ -1,9 +1,8 @@
 {
   "courses": [
-    {"name": "Python Programming in Business (Group 2)", "priority": 1},
-    {"name": "Agentic AI and Workflow Automation for Everyone", "priority": 2},
-    {"name": "Mathematical Theory of Games", "priority": 3},
-    {"name": "Designing Nature: AI, Atoms, and the Art of Simulation", "priority": 4}
-
+    {"name": "Python Programming in Business (Group 1)", "xkid": "24165", "priority": 1},
+    {"name": "Agentic AI and Workflow Automation for Everyone", "xkid": "24307", "priority": 2},
+    {"name": "Mathematical Theory of Games", "xkid": "24072", "priority": 3},
+    {"name": "Designing Nature: AI, Atoms, and the Art of Simulation", "xkid": "24105", "priority": 4}
   ]
 }

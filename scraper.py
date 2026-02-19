@@ -103,16 +103,43 @@ class Session:
     def _is_login_page(self, text):
         return "form1" in text and "user_lb" in text
 
+    def _get_with_retry(self, url, max_retries=3):
+        """GET with automatic retry on network errors."""
+        for attempt in range(max_retries):
+            try:
+                return self.session.get(url)
+            except requests.RequestException as e:
+                if attempt < max_retries - 1:
+                    wait = 2 * (attempt + 1)
+                    log(f"  Network error (GET): {e}. Retry in {wait}s ...", YELLOW)
+                    time.sleep(wait)
+                    self._recreate_session()
+                else:
+                    raise
+
+    def _recreate_session(self):
+        """Recreate session to clear broken SSL state, preserving cookies."""
+        old_cookies = self.session.cookies
+        self.session = requests.Session()
+        self.session.headers.update({
+            "User-Agent": (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/131.0.0.0 Safari/537.36"
+            ),
+        })
+        self.session.cookies = old_cookies
+
     def fetch_normal_page(self, page=1):
         """Fetch the Normal enrollment page. Returns HTML text."""
         self.ensure_logged_in()
 
         if page == 1 and not self.viewstate:
             # Initial GET to enter the Normal page
-            resp = self.session.get(f"{NORMAL_URL}&id={ENTRY_ID}")
+            resp = self._get_with_retry(f"{NORMAL_URL}&id={ENTRY_ID}")
         else:
             # POST with __doPostBack for pagination
-            resp = self.session.post(NORMAL_URL, data={
+            resp = self._post_with_retry(NORMAL_URL, {
                 "__EVENTTARGET": "Page",
                 "__EVENTARGUMENT": str(page),
                 "__VIEWSTATE": self.viewstate,
@@ -122,7 +149,7 @@ class Session:
             log("Session expired, re-logging in ...", YELLOW)
             self.logged_in = False
             self.login()
-            resp = self.session.get(f"{NORMAL_URL}&id={ENTRY_ID}")
+            resp = self._get_with_retry(f"{NORMAL_URL}&id={ENTRY_ID}")
 
         # Update viewstate
         soup = BeautifulSoup(resp.text, "html.parser")
@@ -132,22 +159,36 @@ class Session:
 
         return resp.text
 
+    def _post_with_retry(self, url, data, max_retries=3):
+        """POST with automatic retry on network errors."""
+        for attempt in range(max_retries):
+            try:
+                return self.session.post(url, data=data)
+            except requests.RequestException as e:
+                if attempt < max_retries - 1:
+                    wait = 2 * (attempt + 1)
+                    log(f"  Network error: {e}. Retry in {wait}s ...", YELLOW)
+                    time.sleep(wait)
+                    self._recreate_session()
+                else:
+                    raise
+
     def do_postback(self, event_target, event_argument):
         """Submit a __doPostBack action (Add, Del, etc.)."""
         self.ensure_logged_in()
-        resp = self.session.post(NORMAL_URL, data={
+        resp = self._post_with_retry(NORMAL_URL, {
             "__EVENTTARGET": event_target,
             "__EVENTARGUMENT": event_argument,
             "__VIEWSTATE": self.viewstate,
         })
 
         if self._is_login_page(resp.text):
-            log("Session expired during postback, re-logging in ...", YELLOW)
+            log("Session expired, re-logging in ...", YELLOW)
             self.logged_in = False
             self.login()
-            # Re-enter the Normal page and retry
+            self.viewstate = ""
             self.fetch_normal_page(1)
-            resp = self.session.post(NORMAL_URL, data={
+            resp = self._post_with_retry(NORMAL_URL, {
                 "__EVENTTARGET": event_target,
                 "__EVENTARGUMENT": event_argument,
                 "__VIEWSTATE": self.viewstate,
@@ -399,103 +440,80 @@ def cmd_grab(args):
         log("No target courses in config.json", YELLOW)
         return
 
+    for t in targets:
+        if "xkid" not in t:
+            log(f"ERROR: '{t['name']}' missing 'xkid' in config.json. Run query first.", RED)
+            sys.exit(1)
+
     log(f"Target courses ({len(targets)}):", BOLD)
     for t in targets:
-        log(f"  [{t['priority']}] {t['name']}", CYAN)
+        log(f"  [{t['priority']}] {t['name']} (xkid={t['xkid']})", CYAN)
 
     interval = args.interval
     if args.rush:
-        interval = 1
-        log("RUSH MODE: 1-second interval", YELLOW)
+        interval = 0.3  # small delay to avoid SSL rate-limiting
+        log("RUSH MODE: direct submission, 0.3s between rounds", YELLOW)
 
-    log(f"Polling every {interval}s. Press Ctrl+C to stop.\n", CYAN)
+    log("Press Ctrl+C to stop.\n", CYAN)
 
     sess = Session()
+    log("Entering enrollment page ...", CYAN)
+    sess.fetch_normal_page(1)
+
     remaining_targets = list(targets)
     attempt = 0
 
     try:
         while remaining_targets:
             attempt += 1
-            log(f"── Attempt #{attempt} ──", BOLD)
-
-            try:
-                all_courses, registered, credit_info, _ = fetch_all_courses(sess)
-            except requests.RequestException as e:
-                log(f"Network error: {e}. Retrying in {interval}s ...", RED)
-                time.sleep(interval)
-                continue
-
-            if credit_info:
-                remaining_credits = credit_info["max_credits"] - credit_info["chosen_credits"]
-                log(f"  Credits: {credit_info['chosen_credits']}/{credit_info['max_credits']} (room for {remaining_credits} more)", CYAN)
-
-            if not all_courses:
-                log("No courses found. Will retry ...", YELLOW)
-                time.sleep(interval)
-                continue
 
             grabbed = []
             for target in remaining_targets:
-                keyword = target["name"]
-                matched = [c for c in all_courses if keyword.lower() in c["name"].lower()]
+                try:
+                    resp_html = sess.do_postback("Add", target["xkid"])
+                except requests.RequestException as e:
+                    log(f"  Network error: {e}", RED)
+                    time.sleep(5)
+                    try:
+                        sess.viewstate = ""
+                        sess.fetch_normal_page(1)
+                    except requests.RequestException:
+                        log("  Recovery failed, will retry next round ...", YELLOW)
+                        sess._recreate_session()
+                        sess.logged_in = False
+                    break
 
-                if not matched:
-                    log(f"  [{target['priority']}] '{keyword}' — not found on any page", YELLOW)
-                    continue
-
-                for course in matched:
-                    if course["xkid"]:
-                        # Has a Select button — go!
-                        log(f"  [{target['priority']}] '{course['name']}' — SELECT AVAILABLE (xkid={course['xkid']}, {course['applicant']}/{course['quota']})", GREEN)
-                        log(f"  -> Submitting Add postback ...", CYAN)
-
-                        resp_html = sess.do_postback("Add", course["xkid"])
-
-                        # Check result — server returns alert() for both success and failure
-                        alert_match = re.search(r'alert\("([\s\S]*?)"\)', resp_html)
-                        if alert_match:
-                            alert_msg = alert_match.group(1).replace("\\r\\n", " ").strip()
-                            if "successful" in alert_msg.lower():
-                                log(f"  ENROLLED in '{course['name']}'!", GREEN + BOLD)
-                                notify_macos("选课成功!", f"已选上 {course['name']}")
-                                notify_sound()
-                                grabbed.append(target)
-                                break
-                            else:
-                                log(f"  -> Server says: {alert_msg}", RED)
-                        else:
-                            # No alert — check registered list
-                            new_registered = parse_registered_courses(resp_html)
-                            newly_enrolled = [r for r in new_registered if keyword.lower() in r["name"].lower()]
-                            if newly_enrolled:
-                                log(f"  ENROLLED in '{course['name']}'!", GREEN + BOLD)
-                                notify_macos("选课成功!", f"已选上 {course['name']}")
-                                notify_sound()
-                                grabbed.append(target)
-                                break
-                            else:
-                                _dump(resp_html, "dump_enroll_response.html")
-                                log(f"  -> Result unclear. Saved to dump_enroll_response.html", YELLOW)
-
-                    elif "full" in course["option"].lower():
-                        log(f"  [{target['priority']}] '{course['name']}' — FULL ({course['applicant']}/{course['quota']})", RED)
+                alert_match = re.search(r'alert\("([\s\S]*?)"\)', resp_html)
+                if alert_match:
+                    alert_msg = alert_match.group(1).replace("\\r\\n", " ").strip()
+                    if "successful" in alert_msg.lower():
+                        log(f"  ENROLLED: {target['name']}!", GREEN + BOLD)
+                        notify_macos("选课成功!", f"已选上 {target['name']}")
+                        notify_sound()
+                        grabbed.append(target)
                     else:
-                        log(f"  [{target['priority']}] '{course['name']}' — {course['option']}", YELLOW)
+                        if attempt % 20 == 1:
+                            log(f"  #{attempt} [{target['priority']}] {target['name']}: {alert_msg}", RED)
+                else:
+                    new_registered = parse_registered_courses(resp_html)
+                    if any(target["name"].lower() in r["name"].lower() for r in new_registered):
+                        log(f"  ENROLLED: {target['name']}!", GREEN + BOLD)
+                        notify_macos("选课成功!", f"已选上 {target['name']}")
+                        notify_sound()
+                        grabbed.append(target)
 
             for g in grabbed:
                 remaining_targets.remove(g)
 
-            if remaining_targets:
-                log(f"  Waiting {interval}s ...\n", CYAN)
-                # time.sleep(interval)
-            else:
+            if not remaining_targets:
                 log("All target courses grabbed! Done.", GREEN + BOLD)
                 notify_macos("全部选完!", "所有目标课程已选上")
                 notify_sound()
+            elif interval > 0:
+                time.sleep(interval)
 
     except KeyboardInterrupt:
-        log("\nStopped by user.", YELLOW)
+        log(f"\nStopped after {attempt} attempts.", YELLOW)
 
 
 # ──────────────────────────────────────────────

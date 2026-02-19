@@ -1,5 +1,18 @@
+# Credentials
 .env
+
+# Dumps (debug HTML files)
 dump.html
+dump_normal.html
+dump_*.html
+
+# Python
 __pycache__/
 *.pyc
+*.pyo
+
+# Claude Code
 .claude/
+
+# macOS
+.DS_Store
