@@ -1,0 +1,76 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>XMUM Academic Affairs Online System</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1" />
+<link href="https://static.xmu.edu.my/inc/login.min.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="window">
+  <div id="content">
+    <h1>XMUM Academic Affairs Online System</h1>
+    <div id="note"> <img src="https://static.xmu.edu.my/img/login-icon.gif" /><br />
+      <br />
+      Welcome to XMUM Academic Affairs Online System.<br />
+      <br />
+      Please use your staff ID or student ID and password to log in.<br />
+      <br />
+            <span class="error-msg">Wrong Parameters.</span><br />
+          </div>
+    <div id="form"> <img src="https://static.xmu.edu.my/img/login-title.gif" /><br />
+      <br />
+      <form name="form1" id="form1" method="post" action="/index.php?c=Login&a=login" onsubmit="return fnOnSubmit(this);">
+        <label>Username</label>
+        <input type="text" name="username" id="username" size="20" maxlength="32" value="" autocomplete="off" />
+        <br />
+        <br />
+        <label>Password</label>
+        <input type="password" name="password" id="password" size="20" maxlength="32" value="" autocomplete="off" />
+        <br />
+        <br />
+        <label>Category</label>
+        <select name="user_lb" id="user_lb">
+<option value="Student">Student</option>
+<option value="Teacher">Teacher</option>
+<option value="Admin">Admin</option>
+</select>
+        <br />
+        <br />
+        <label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>
+        <input type="submit" id="loginbtn" value="Submit" class="button" />
+      </form>
+    </div>
+  </div>
+</div>
+<script type="text/javascript">
+function fnOnSubmit(form)
+{
+	if (form.username.value == '' || form.password.value == '') {
+		if (form.username.value == '') {
+			form.username.focus();
+		} else {
+			form.password.focus();
+		}
+		alert('Please key in username and password to login.');
+		return false;
+	}
+	form.loginbtn.disabled = true;
+	return true;
+}
+function fnFocus()
+{
+	var form = document.getElementById('form1');
+	if (form == null) return;
+	if (form.username.value == '') {
+		form.username.focus();
+	} else if (form.password.value == '') {
+		form.password.focus();
+	}
+alert('Wrong Parameters.');}
+if (window.addEventListener) {
+	window.addEventListener("load", fnFocus, false);
+} else if (window.attachEvent) {
+	window.attachEvent("onload", fnFocus);
+}
+</script>
+</body></html>

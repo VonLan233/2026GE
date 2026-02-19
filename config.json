@@ -1,7 +1,9 @@
 {
   "courses": [
-    {"name": "课程名称关键词1", "priority": 1},
-    {"name": "课程名称关键词2", "priority": 2},
-    {"name": "课程名称关键词3", "priority": 3}
+    {"name": "Python Programming in Business (Group 2)", "priority": 1},
+    {"name": "Agentic AI and Workflow Automation for Everyone", "priority": 2},
+    {"name": "Mathematical Theory of Games", "priority": 3},
+    {"name": "Designing Nature: AI, Atoms, and the Art of Simulation", "priority": 4}
+
   ]
 }

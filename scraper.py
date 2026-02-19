@@ -4,6 +4,7 @@
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -16,8 +17,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BASE_URL = "https://ac.xmu.edu.my"
-LOGIN_URL = f"{BASE_URL}/index.php"
-COURSE_URL = f"{BASE_URL}/student/index.php?c=Xk&a=index"
+LOGIN_PAGE_URL = f"{BASE_URL}/index.php"
+LOGIN_URL = f"{BASE_URL}/index.php?c=Login&a=login"
+NORMAL_URL = f"{BASE_URL}/student/index.php?c=Xk&a=Normal"
+ENTRY_ID = "1403"  # from the Entry button on the index page
 
 # ANSI colors
 RED = "\033[91m"
@@ -34,14 +37,10 @@ def log(msg, color=""):
 
 
 def notify_macos(title, message):
-    """Send a macOS notification."""
     try:
         subprocess.run(
-            [
-                "osascript",
-                "-e",
-                f'display notification "{message}" with title "{title}" sound name "Glass"',
-            ],
+            ["osascript", "-e",
+             f'display notification "{message}" with title "{title}" sound name "Glass"'],
             check=False,
         )
     except FileNotFoundError:
@@ -49,34 +48,31 @@ def notify_macos(title, message):
 
 
 def notify_sound():
-    """Play a short alert sound on macOS."""
     try:
         subprocess.Popen(
             ["afplay", "/System/Library/Sounds/Hero.aiff"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         )
     except FileNotFoundError:
         pass
 
 
 # ──────────────────────────────────────────────
-# Login
+# Session & Login
 # ──────────────────────────────────────────────
 
 class Session:
     def __init__(self):
         self.session = requests.Session()
-        self.session.headers.update(
-            {
-                "User-Agent": (
-                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/131.0.0.0 Safari/537.36"
-                ),
-            }
-        )
+        self.session.headers.update({
+            "User-Agent": (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/131.0.0.0 Safari/537.36"
+            ),
+        })
         self.logged_in = False
+        self.viewstate = ""
 
     def login(self):
         username = os.getenv("XMU_USERNAME")
@@ -86,44 +82,15 @@ class Session:
             sys.exit(1)
 
         log(f"Logging in as {username} ...", CYAN)
+        self.session.get(LOGIN_PAGE_URL)
+        resp = self.session.post(LOGIN_URL, data={
+            "username": username,
+            "password": password,
+            "user_lb": "Student",
+        }, allow_redirects=True)
 
-        # GET the login page first to pick up any hidden fields / cookies
-        resp = self.session.get(LOGIN_URL)
-        soup = BeautifulSoup(resp.text, "html.parser")
-
-        # Build payload — start with all hidden inputs on the form
-        payload = {}
-        form = soup.find("form")
-        if form:
-            for inp in form.find_all("input", attrs={"type": "hidden"}):
-                name = inp.get("name")
-                if name:
-                    payload[name] = inp.get("value", "")
-
-        payload.update(
-            {
-                "username": username,
-                "password": password,
-                "Category": "Student",
-            }
-        )
-
-        # Determine the form action URL
-        action = LOGIN_URL
-        if form and form.get("action"):
-            action_url = str(form["action"])
-            if action_url.startswith("http"):
-                action = action_url
-            else:
-                action = f"{BASE_URL}/{action_url.lstrip('/')}"
-
-        resp = self.session.post(action, data=payload, allow_redirects=True)
-
-        # Check success: if response still contains a login form, we failed
-        if "password" in resp.text.lower() and "login" in resp.text.lower():
-            # Save the response for debugging
-            _dump(resp.text, "dump_login_fail.html")
-            log("Login FAILED — check credentials. Response saved to dump_login_fail.html", RED)
+        if "form1" in resp.text and "password" in resp.text.lower() and "Wrong" in resp.text:
+            log("Login FAILED — check credentials.", RED)
             sys.exit(1)
 
         self.logged_in = True
@@ -133,109 +100,225 @@ class Session:
         if not self.logged_in:
             self.login()
 
-    def fetch_course_page(self):
-        """Fetch the course selection page HTML."""
-        self.ensure_logged_in()
-        resp = self.session.get(COURSE_URL)
+    def _is_login_page(self, text):
+        return "form1" in text and "user_lb" in text
 
-        # Detect session expiry (redirected back to login)
-        if "password" in resp.text.lower() and "login" in resp.text.lower():
+    def fetch_normal_page(self, page=1):
+        """Fetch the Normal enrollment page. Returns HTML text."""
+        self.ensure_logged_in()
+
+        if page == 1 and not self.viewstate:
+            # Initial GET to enter the Normal page
+            resp = self.session.get(f"{NORMAL_URL}&id={ENTRY_ID}")
+        else:
+            # POST with __doPostBack for pagination
+            resp = self.session.post(NORMAL_URL, data={
+                "__EVENTTARGET": "Page",
+                "__EVENTARGUMENT": str(page),
+                "__VIEWSTATE": self.viewstate,
+            })
+
+        if self._is_login_page(resp.text):
             log("Session expired, re-logging in ...", YELLOW)
             self.logged_in = False
             self.login()
-            resp = self.session.get(COURSE_URL)
+            resp = self.session.get(f"{NORMAL_URL}&id={ENTRY_ID}")
+
+        # Update viewstate
+        soup = BeautifulSoup(resp.text, "html.parser")
+        vs = soup.find("input", {"name": "__VIEWSTATE"})
+        if vs:
+            self.viewstate = vs.get("value", "")
+
+        return resp.text
+
+    def do_postback(self, event_target, event_argument):
+        """Submit a __doPostBack action (Add, Del, etc.)."""
+        self.ensure_logged_in()
+        resp = self.session.post(NORMAL_URL, data={
+            "__EVENTTARGET": event_target,
+            "__EVENTARGUMENT": event_argument,
+            "__VIEWSTATE": self.viewstate,
+        })
+
+        if self._is_login_page(resp.text):
+            log("Session expired during postback, re-logging in ...", YELLOW)
+            self.logged_in = False
+            self.login()
+            # Re-enter the Normal page and retry
+            self.fetch_normal_page(1)
+            resp = self.session.post(NORMAL_URL, data={
+                "__EVENTTARGET": event_target,
+                "__EVENTARGUMENT": event_argument,
+                "__VIEWSTATE": self.viewstate,
+            })
+
+        # Update viewstate from response
+        soup = BeautifulSoup(resp.text, "html.parser")
+        vs = soup.find("input", {"name": "__VIEWSTATE"})
+        if vs:
+            self.viewstate = vs.get("value", "")
 
         return resp.text
 
 
 # ──────────────────────────────────────────────
-# Parsing (placeholder — fill in after dump)
+# Parsing — Normal page (c=Xk&a=Normal)
 # ──────────────────────────────────────────────
+# data_table (available courses):
+#   Code | Name | GE Field | Credit | Week | Lecturer | Time | Quota | Applicant No. | Option
+# data_table2 (registered courses):
+#   Code | Name(Waiting List) | GE Field | Credit | Week | Lecturer | Time | Quota | Applicant No. | Wishing List | Cancel
 
-def parse_courses(html):
-    """Parse the course page HTML and return a list of course dicts.
-
-    Each dict: {
-        "name": str,
-        "teacher": str,
-        "enrolled": int,
-        "capacity": int,
-        "remaining": int,
-        "course_id": str | None,   # for submitting enrollment
-        "row_data": dict,          # raw data for debugging
-    }
-
-    TODO: Update selectors after analyzing dump.html
-    """
+def parse_available_courses(html):
+    """Parse available courses from data_table."""
     soup = BeautifulSoup(html, "html.parser")
+    table = soup.find("table", id="data_table")
+    if not table:
+        return []
+
     courses = []
+    tbody = table.find("tbody")
+    if not tbody:
+        return []
 
-    # ── Attempt: look for a <table> with course rows ──
-    tables = soup.find_all("table")
-    for table in tables:
-        rows = table.find_all("tr")
-        if len(rows) < 2:
+    for row in tbody.find_all("tr", recursive=False):
+        if "none" in (row.get("style") or ""):
             continue
-        # Use first row as header
-        headers = [th.get_text(strip=True) for th in rows[0].find_all(["th", "td"])]
-        for row in rows[1:]:
-            cells = [td.get_text(strip=True) for td in row.find_all("td")]
-            if not cells:
-                continue
-            row_data = dict(zip(headers, cells))
+        cells = row.find_all("td")
+        if len(cells) < 10:
+            continue
 
-            # Try to extract a course_id from a link or button in the row
-            course_id = None
-            link = row.find("a", href=True)
-            if link:
-                course_id = link["href"]
-            btn = row.find("button") or row.find("input", attrs={"type": "submit"})
-            if btn:
-                course_id = btn.get("value") or btn.get("onclick", "")
+        option_cell = cells[9]
+        option_text = option_cell.get_text(strip=True)
 
-            courses.append(
-                {
-                    "name": row_data.get(headers[0] if headers else "", cells[0] if cells else ""),
-                    "teacher": row_data.get(headers[1] if len(headers) > 1 else "", cells[1] if len(cells) > 1 else ""),
-                    "enrolled": _safe_int(cells, 2),
-                    "capacity": _safe_int(cells, 3),
-                    "remaining": _safe_int(cells, 4),
-                    "course_id": course_id,
-                    "row_data": row_data,
-                }
-            )
+        # Extract xkid from __doPostBack('Add','XXXXX')
+        xkid = None
+        btn = option_cell.find("input", {"value": "Select"})
+        if btn:
+            onclick = btn.get("onclick", "")
+            m = re.search(r"__doPostBack\('Add','(\d+)'\)", onclick)
+            if m:
+                xkid = m.group(1)
 
-    if not courses:
-        log("WARNING: No courses parsed. Run with --dump and share dump.html for analysis.", YELLOW)
+        quota = _parse_int(cells[7].get_text(strip=True))
+        applicant = _parse_int(cells[8].get_text(strip=True))
+
+        courses.append({
+            "code": cells[0].get_text(strip=True),
+            "name": cells[1].get_text(strip=True),
+            "field": cells[2].get_text(strip=True),
+            "credit": cells[3].get_text(strip=True),
+            "week": cells[4].get_text(strip=True),
+            "lecturer": cells[5].get_text(strip=True),
+            "time_venue": cells[6].get_text(" | ", strip=True),
+            "quota": quota,
+            "applicant": applicant,
+            "remaining": quota - applicant if quota >= 0 and applicant >= 0 else -1,
+            "option": option_text,
+            "xkid": xkid,
+        })
 
     return courses
 
 
-def _safe_int(cells, idx):
-    try:
-        return int(cells[idx])
-    except (IndexError, ValueError):
-        return -1
+def parse_registered_courses(html):
+    """Parse registered courses from data_table2."""
+    soup = BeautifulSoup(html, "html.parser")
+    table = soup.find("table", id="data_table2")
+    if not table:
+        return []
+
+    courses = []
+    tbody = table.find("tbody")
+    if not tbody:
+        return []
+
+    for row in tbody.find_all("tr", recursive=False):
+        cells = row.find_all("td")
+        if len(cells) < 11:
+            continue
+
+        # Extract cancel xkid
+        cancel_xkid = None
+        cancel_cell = cells[10]
+        btn = cancel_cell.find("input", {"value": "Cancel"})
+        if btn:
+            onclick = btn.get("onclick", "")
+            m = re.search(r"__doPostBack\('Del','(\d+)'\)", onclick)
+            if m:
+                cancel_xkid = m.group(1)
+
+        courses.append({
+            "code": cells[0].get_text(strip=True),
+            "name": cells[1].get_text(strip=True),
+            "field": cells[2].get_text(strip=True),
+            "credit": cells[3].get_text(strip=True),
+            "quota": _parse_int(cells[7].get_text(strip=True)),
+            "applicant": _parse_int(cells[8].get_text(strip=True)),
+            "cancel_xkid": cancel_xkid,
+        })
+
+    return courses
 
 
-def submit_enrollment(session_obj, course):
-    """Submit the enrollment request for a course.
+def parse_credit_info(html):
+    """Parse credit info (max/chosen) from the summary table."""
+    soup = BeautifulSoup(html, "html.parser")
+    # Find the summary table (first table with "Credits (max)" header)
+    for table in soup.find_all("table", class_="data"):
+        if table.get("id"):
+            continue  # Skip data_table and data_table2
+        text = table.get_text()
+        if "Credits" in text:
+            rows = table.find_all("tr")
+            for row in rows:
+                cells = row.find_all("td")
+                if len(cells) >= 4:
+                    return {
+                        "round": cells[0].get_text(strip=True),
+                        "stage": cells[1].get_text(strip=True),
+                        "max_credits": _parse_int(cells[2].get_text(strip=True)),
+                        "chosen_credits": _parse_int(cells[3].get_text(strip=True)),
+                    }
+    return None
 
-    TODO: Implement after analyzing the actual enrollment form/API.
-    Likely a POST request with course_id and possibly semester/round params.
-    """
-    log(f"  -> Attempting to enroll in: {course['name']} (id={course.get('course_id')})", CYAN)
 
-    # ── PLACEHOLDER: replace with actual enrollment API ──
-    # Example skeleton:
-    # resp = session_obj.session.post(
-    #     f"{BASE_URL}/student/index.php?c=Xk&a=select",
-    #     data={"course_id": course["course_id"], ...},
-    # )
-    # return "success" in resp.text.lower()
+def get_total_pages(html):
+    """Extract total page count from pagination."""
+    max_page = 1
+    for m in re.finditer(r"__doPostBack\('Page','(\d+)'\)", html):
+        max_page = max(max_page, int(m.group(1)))
+    return max_page
 
-    log("  -> Enrollment submission NOT YET IMPLEMENTED (need to analyze dump.html first)", YELLOW)
-    return False
+
+def _parse_int(s):
+    m = re.search(r"\d+", s)
+    return int(m.group()) if m else -1
+
+
+# ──────────────────────────────────────────────
+# Fetch all pages
+# ──────────────────────────────────────────────
+
+def fetch_all_courses(sess):
+    """Fetch all pages and return (available_courses, registered_courses, credit_info, first_page_html)."""
+    html = sess.fetch_normal_page(1)
+    total_pages = get_total_pages(html)
+
+    all_available = parse_available_courses(html)
+    registered = parse_registered_courses(html)
+    credit_info = parse_credit_info(html)
+
+    log(f"Page 1/{total_pages}: {len(all_available)} courses", CYAN)
+
+    for p in range(2, total_pages + 1):
+        page_html = sess.fetch_normal_page(p)
+        page_courses = parse_available_courses(page_html)
+        log(f"Page {p}/{total_pages}: {len(page_courses)} courses", CYAN)
+        all_available.extend(page_courses)
+
+    return all_available, registered, credit_info, html
 
 
 # ──────────────────────────────────────────────
@@ -243,60 +326,69 @@ def submit_enrollment(session_obj, course):
 # ──────────────────────────────────────────────
 
 def _dump(html, filename="dump.html"):
-    path = os.path.join(os.path.dirname(__file__), filename)
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
     with open(path, "w", encoding="utf-8") as f:
         f.write(html)
     log(f"HTML saved to {path}", CYAN)
 
 
-def cmd_dump(args):
-    """Save raw course page HTML for analysis."""
+def cmd_dump(_args):
     sess = Session()
-    html = sess.fetch_course_page()
-    _dump(html)
+    html = sess.fetch_normal_page(1)
+    _dump(html, "dump_normal.html")
 
 
 def cmd_query(args):
-    """Query and display all course availability."""
     sess = Session()
-    html = sess.fetch_course_page()
+    all_courses, registered, credit_info, html = fetch_all_courses(sess)
 
     if args.dump:
-        _dump(html)
+        _dump(html, "dump_normal.html")
 
-    courses = parse_courses(html)
-    if not courses:
-        log("No course data found. Try --dump to inspect the page.", YELLOW)
+    # Credit info
+    if credit_info:
+        print(f"\n{BOLD}Round: {credit_info['round']} | Stage: {credit_info['stage']} | Credits: {credit_info['chosen_credits']}/{credit_info['max_credits']}{RESET}")
+
+    # Registered courses
+    if registered:
+        print(f"\n{BOLD}=== Registered Courses ==={RESET}")
+        for c in registered:
+            print(f"  {c['code']} {c['name']} ({c['credit']}cr) — {c['applicant']}/{c['quota']} applicants [cancel_id={c['cancel_xkid']}]")
+
+    if not all_courses:
+        log("No available course data found.", YELLOW)
         return
 
-    # Print table
-    print()
-    print(f"{BOLD}{'课程名称':<24} {'授课教师':<12} {'已选/容量':<12} {'剩余':>6}{RESET}")
-    print("-" * 58)
-    for c in courses:
-        remaining = c["remaining"]
-        if remaining == -1:
-            remaining_str = "?"
-            color = YELLOW
-        elif remaining == 0:
-            remaining_str = "0 (已满)"
-            color = RED
-        else:
-            remaining_str = str(remaining)
-            color = GREEN
+    # Available courses
+    print(f"\n{BOLD}=== Available Courses ({len(all_courses)} total) ==={RESET}")
+    header = f"{'Code':<8} {'Course Name':<52} {'Cr':>3} {'Quota':>6} {'Apply':>6} {'Left':>5} {'Option':<10}"
+    print(BOLD + header + RESET)
+    print("-" * len(header))
 
-        enrolled_str = f"{c['enrolled']}/{c['capacity']}" if c["capacity"] != -1 else "?/?"
-        print(
-            f"{c['name']:<24} {c['teacher']:<12} {enrolled_str:<12} {color}{remaining_str:>6}{RESET}"
-        )
+    for c in all_courses:
+        remaining = c["remaining"]
+        option = c["option"]
+
+        if c["xkid"]:
+            color = GREEN
+            option_str = f"Select({c['xkid']})"
+        elif "full" in option.lower():
+            color = RED
+            option_str = "Full"
+        else:
+            color = YELLOW
+            option_str = option[:10]
+
+        left_str = str(remaining) if remaining >= 0 else "?"
+        print(f"{c['code']:<8} {c['name']:<52} {c['credit']:>3} {c['quota']:>6} {c['applicant']:>6} {color}{left_str:>5}{RESET} {color}{option_str:<10}{RESET}")
+
     print()
 
 
 def cmd_grab(args):
-    """Auto-grab courses based on config.json priority list."""
-    config_path = os.path.join(os.path.dirname(__file__), "config.json")
+    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
     if not os.path.exists(config_path):
-        log("ERROR: config.json not found. Create it with target courses.", RED)
+        log("ERROR: config.json not found.", RED)
         sys.exit(1)
 
     with open(config_path, "r", encoding="utf-8") as f:
@@ -328,54 +420,75 @@ def cmd_grab(args):
             log(f"── Attempt #{attempt} ──", BOLD)
 
             try:
-                html = sess.fetch_course_page()
+                all_courses, registered, credit_info, _ = fetch_all_courses(sess)
             except requests.RequestException as e:
                 log(f"Network error: {e}. Retrying in {interval}s ...", RED)
                 time.sleep(interval)
                 continue
 
-            courses = parse_courses(html)
-            if not courses:
-                log("No courses parsed yet. Will retry ...", YELLOW)
+            if credit_info:
+                remaining_credits = credit_info["max_credits"] - credit_info["chosen_credits"]
+                log(f"  Credits: {credit_info['chosen_credits']}/{credit_info['max_credits']} (room for {remaining_credits} more)", CYAN)
+
+            if not all_courses:
+                log("No courses found. Will retry ...", YELLOW)
                 time.sleep(interval)
                 continue
 
-            # Match targets against available courses
             grabbed = []
             for target in remaining_targets:
                 keyword = target["name"]
-                matched = [c for c in courses if keyword in c["name"]]
+                matched = [c for c in all_courses if keyword.lower() in c["name"].lower()]
+
                 if not matched:
-                    log(f"  [{target['priority']}] '{keyword}' — not found on page", YELLOW)
+                    log(f"  [{target['priority']}] '{keyword}' — not found on any page", YELLOW)
                     continue
 
                 for course in matched:
-                    remaining = course["remaining"]
-                    if remaining > 0:
-                        log(
-                            f"  [{target['priority']}] '{course['name']}' has {remaining} spot(s)!",
-                            GREEN,
-                        )
-                        success = submit_enrollment(sess, course)
-                        if success:
-                            log(f"  ENROLLED in '{course['name']}'!", GREEN + BOLD)
-                            notify_macos("选课成功!", f"已选上 {course['name']}")
-                            notify_sound()
-                            grabbed.append(target)
-                            break
+                    if course["xkid"]:
+                        # Has a Select button — go!
+                        log(f"  [{target['priority']}] '{course['name']}' — SELECT AVAILABLE (xkid={course['xkid']}, {course['applicant']}/{course['quota']})", GREEN)
+                        log(f"  -> Submitting Add postback ...", CYAN)
+
+                        resp_html = sess.do_postback("Add", course["xkid"])
+
+                        # Check result — server returns alert() for both success and failure
+                        alert_match = re.search(r'alert\("([\s\S]*?)"\)', resp_html)
+                        if alert_match:
+                            alert_msg = alert_match.group(1).replace("\\r\\n", " ").strip()
+                            if "successful" in alert_msg.lower():
+                                log(f"  ENROLLED in '{course['name']}'!", GREEN + BOLD)
+                                notify_macos("选课成功!", f"已选上 {course['name']}")
+                                notify_sound()
+                                grabbed.append(target)
+                                break
+                            else:
+                                log(f"  -> Server says: {alert_msg}", RED)
                         else:
-                            log(f"  Enrollment attempt failed for '{course['name']}'", RED)
-                    elif remaining == 0:
-                        log(f"  [{target['priority']}] '{course['name']}' — full ({course['enrolled']}/{course['capacity']})", RED)
+                            # No alert — check registered list
+                            new_registered = parse_registered_courses(resp_html)
+                            newly_enrolled = [r for r in new_registered if keyword.lower() in r["name"].lower()]
+                            if newly_enrolled:
+                                log(f"  ENROLLED in '{course['name']}'!", GREEN + BOLD)
+                                notify_macos("选课成功!", f"已选上 {course['name']}")
+                                notify_sound()
+                                grabbed.append(target)
+                                break
+                            else:
+                                _dump(resp_html, "dump_enroll_response.html")
+                                log(f"  -> Result unclear. Saved to dump_enroll_response.html", YELLOW)
+
+                    elif "full" in course["option"].lower():
+                        log(f"  [{target['priority']}] '{course['name']}' — FULL ({course['applicant']}/{course['quota']})", RED)
                     else:
-                        log(f"  [{target['priority']}] '{course['name']}' — capacity unknown", YELLOW)
+                        log(f"  [{target['priority']}] '{course['name']}' — {course['option']}", YELLOW)
 
             for g in grabbed:
                 remaining_targets.remove(g)
 
             if remaining_targets:
-                log(f"  Waiting {interval}s before next attempt ...\n", CYAN)
-                time.sleep(interval)
+                log(f"  Waiting {interval}s ...\n", CYAN)
+                # time.sleep(interval)
             else:
                 log("All target courses grabbed! Done.", GREEN + BOLD)
                 notify_macos("全部选完!", "所有目标课程已选上")
@@ -391,17 +504,15 @@ def cmd_grab(args):
 
 def main():
     parser = argparse.ArgumentParser(description="XMUM 小学期选课工具")
-    parser.add_argument("--dump", action="store_true", help="Save raw HTML to dump.html")
+    parser.add_argument("--dump", action="store_true", help="Save raw HTML")
     sub = parser.add_subparsers(dest="command")
 
-    # query
-    q = sub.add_parser("query", help="Query course availability")
+    q = sub.add_parser("query", help="Query all courses")
     q.add_argument("--dump", action="store_true", help="Also save raw HTML")
 
-    # grab
     g = sub.add_parser("grab", help="Auto-grab courses from config.json")
-    g.add_argument("--interval", type=int, default=5, help="Polling interval in seconds (default: 5)")
-    g.add_argument("--rush", action="store_true", help="Rush mode: 1-second interval")
+    g.add_argument("--interval", type=int, default=5, help="Poll interval seconds (default: 5)")
+    g.add_argument("--rush", action="store_true", help="Rush mode: 1s interval")
 
     args = parser.parse_args()
 

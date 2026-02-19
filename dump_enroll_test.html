@@ -1,0 +1,897 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>XMUM AC Online</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1" />
+<link href="https://static.xmu.edu.my/inc/style-en.min.css?20190808" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="https://static.xmu.edu.my/inc/common_functions.min.js"></script>
+<!--[if lt IE 7]>
+<script type="text/javascript" src="https://static.xmu.edu.my/inc/menu.min.js"></script>
+<![endif]-->
+</head>
+<body>
+<div id="wrap">
+  <div id="header">
+    <div id="logo"></div>
+    <div id="menuinf">
+        <div id="inf">Welcome，Lan Yichen</div>
+        <div id="menu">
+<ul	id="nav">
+	<li><a href="#">Basic Info.</a>
+		<ul>
+<li><a href="/student/index.php?c=Default&a=inf">Personal	Info.</a></li>
+<li><a href="/student/index.php?c=Default&a=Kb">Timetable</a></li>
+<li><a href="/student/index.php?c=Default&a=Wdkc">Course List</a></li>
+		</ul>
+	</li>
+	<li><a href="/student/index.php?c=Xk&a=index">Online Registration</a>
+		<ul>
+<li><a href="/student/index.php?c=Xk&a=index">Online Registration</a></li>
+		</ul>
+	</li>
+	<li><a href="/student/index.php?c=Search&a=Ksap">Exam</a>
+		<ul>
+<li><a href="/student/index.php?c=Search&a=Ksap">Exam</a></li>
+<li><a href="/student/index.php?c=Search&a=Cj">Exam Result</a></li>
+		</ul>
+	</li>
+	<li><a href="/student/index.php?c=Pj&a=index">Student Evaluation</a>
+		<ul>
+<li><a href="/student/index.php?c=Pj&a=index">Student Evaluation</a></li>
+		</ul>
+	</li>
+	<li><a href="/student/index.php?c=Default&a=logout">Logout</a></li>
+</ul>
+        </div>
+    </div>
+  </div>
+  <div id="main">
+    <div id="m_ext">
+<script>
+function alert_yqzs(msg)
+{
+	if (msg=='' || msg=='无' || msg=='暂无') return true;
+	if (confirm("Pre-requisite is required：" + msg + ".\n\nContinue?")) return true;
+	else return false;
+}
+function alert_cancel(msg)
+{
+	if (confirm("Course “" + msg + "” will be cancelled.\n\nContinue？")) return true;
+	else return false;
+}
+</script>
+<form action="/student/index.php?c=Xk&a=Normal" method="post" name="form1">
+<input type="hidden" name="__EVENTTARGET" value="" />
+<input type="hidden" name="__EVENTARGUMENT" value="" />
+<input type="hidden" name="__VIEWSTATE" value="YTozMjp7czo2OiJ4a3RfaWQiO3M6NDoiMTQwMyI7czo1OiJ4a19pZCI7czozOiI0ODQiO3M6NjoieGt0X21jIjtzOjEyOiJTZWNvbmQgUm91bmQiO3M6ODoieGt0X2tzc2oiO3M6MTA6IjE3NzE0NjI4MDAiO3M6ODoieGt0X2pzc2oiO3M6MTA6IjE3NzE3NjE2MDAiO3M6ODoieGt0X3hreXoiO3M6MToiTiI7czo4OiJ4a3RfeGtqZCI7czoxOiIyIjtzOjg6InhrdF9mYnNqIjtzOjE6IjAiO3M6NjoieGt0X29wIjtzOjE6Ik4iO3M6MTE6InhrdF9vcF90aW1lIjtzOjE6IjAiO3M6NToieGtfbWMiO3M6NzU6IkdlbmVyYWwgRWxlY3RpdmUgU2VsZWN0aW9uIChFeGlzdGluZyBTdHVkZW50cykgZm9yIDIwMjYvMDIgQWNhZGVtaWMgU2Vzc2lvbiI7czo1OiJ4a194biI7czoxOiIwIjtzOjU6InRtX2lkIjtzOjY6IjIwMjYwMiI7czo1OiJ4a194eCI7czoxOiIwIjtzOjU6InhrX3l4IjtzOjE6IjEiO3M6NToieGtfZmIiO3M6MToiWSI7czo3OiJ4a19uanl4IjtzOjE6Ik4iO3M6NzoidXNlcl9pZCI7czoyOiIxNiI7czoxMDoieGtfa2NiX251bSI7czozOiIyMjAiO3M6OToieGtfeHpfbnVtIjtzOjM6IjE2MSI7czo5OiJ4a19tZF9udW0iO3M6MToiMCI7czoxMToieGtfdGltZV9udW0iO3M6MToiMyI7czo3OiJjcmVhdGVkIjtzOjEwOiIxNzYzMDIxNjgyIjtzOjc6InVwZGF0ZWQiO3M6MTA6IjE3NjMwMjE2ODIiO3M6NzoieGt4el9pZCI7czo0OiIyODAxIjtzOjU6Inp5X2lkIjtzOjE6IjkiO3M6ODoienlfZnhfaWQiO3M6MToiMCI7czo1OiJ6eV9uaiI7czo2OiIyMDIzMDkiO3M6MTE6InhreHpfeGZfbWF4IjtzOjE6IjYiO3M6MTE6InhreHpfeGZfbWluIjtzOjE6IjAiO3M6Mjoia3giO2I6MTtzOjExOiJidG5fZGlzYWJsZSI7YjowO30=" />
+<div id="main2">
+  <div id="page-nav">
+  <table cellpadding="0" border="0">
+    <tr><td>&nbsp;
+<b>General Elective Selection (Existing Students) for 2026/02 Academic Session</b>&nbsp;
+<input type="button" value="Back" onclick="__doPostBack('Back')" />
+<input type="button" value="Reload" onclick="__doPostBack('Refresh')" />
+<input type="button" value="Course List (by programme)" onclick="__doPostBack('Some')" disabled />
+<input type="button" value="Course List (all)" onclick="__doPostBack('All')"  />
+    </td>
+    <td align="right">1-30/152&nbsp;[<span class="red">1</span>]<a href="javascript:__doPostBack('Page','2')">[2]</a><a href="javascript:__doPostBack('Page','3')">[3]</a><a href="javascript:__doPostBack('Page','4')">[4]</a><a href="javascript:__doPostBack('Page','5')">[5]</a><a href="javascript:__doPostBack('Page','6')">[6]</a>&nbsp;</td>
+    </tr>
+  </table>
+  </div>
+  <div id="content">
+  <table cellpadding="0" class="data small">
+    <tr>
+      <th>Round</th>
+      <th>Stage</th>
+      <th>Credits (max)</th>
+      <th>Credits Chosen</th>
+    </tr>
+    <tr class="odd">
+      <td>Second Round</td>
+      <td> Add & Drop</td>
+      <td>6</td>
+      <td>3</td>
+    </tr>
+  </table>
+
+  <table cellpadding="0" class="data small" id="data_table2">
+    <thead>
+    <tr>
+      <th>Course Code</th>
+      <th>Waiting List</th>
+      <th>GE Field</th>
+      <th>Credit</th>
+      <th>Teaching Week</th>
+      <th>Lecturer</th>
+      <th>Time & Venue</th>
+      <th>Quota</th>
+      <th>Applicant No.</th>
+      <th>Wishing List</th>
+      <th>Cancel</th>
+    </tr>
+    </thead>
+    <tbody>
+        <tr>
+      <td>G0111</td>
+      <td class="left">Elementary Number Theory (Group 3)</td>
+      <td>Arts</td>
+      <td>3</td>
+      <td>1-5</td>
+      <td>Piyaratne Hathurusinghege Dulip Bandara</td>
+      <td class="left">Monday 10.00am-1.00pm(A2#111)(Week 1-5)<br />Wednesday 3.00pm-6.00pm(A4#102)(Week 1-5)<br />Friday 9.00am-12.00pm(A4#G09)(Week 1-5)</td>
+      <td>86</td>
+      <td><span class="red">86</span></td>
+      <td>1</td>
+      <td>
+<input type="button" value="Cancel"
+onclick="if(alert_cancel('Elementary Number Theory (Group 3)')) __doPostBack('Del','24031')" />
+      </td>
+    </tr>
+        </tbody>
+  </table>
+
+  <table cellpadding="0" class="data small" id="data_table">
+    <thead>
+    <tr>
+      <th>Course Code</th>
+      <th>Course Information (by group)</th>
+      <th>GE Field</th>
+      <th>Credit</th>
+      <th>Teaching Week</th>
+      <th>Lecturer</th>
+      <th>Time & Venue</th>
+      <th>Quota</th>
+      <th>Applicant No.</th>
+      <th>Option</th>
+    </tr>
+    </thead>
+    <tbody>
+        <tr>
+      <td>G0167</td>
+      <td class="left"><a href="javascript:toggle('24067')">#mysocialmediapresence</a></td>
+      <td>Arts</td>
+      <td>3</td>
+      <td>1-5</td>
+      <td>Yvonne Choo Shuen Lann</td>
+      <td class="left">Monday 10.00am-1.00pm(A1#G07)(Week 1-5)<br />Wednesday 3.00pm-6.00pm(A1#G07)(Week 1-5)<br />Friday 9.00am-12.00pm(A1#G07)(Week 1-5)</td>
+      <td>38</td>
+      <td><span class="red">38</span></td>
+      <td>
+    Full
+          </td>
+    </tr>
+    <tr style="display: none" id="24067"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G1118</td>
+      <td class="left"><a href="javascript:toggle('24090')">A Brief Introduction to Chinese Philosophy (Group 1)</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Lee Jian Yan</td>
+      <td class="left">Monday 3.00pm-5.00pm(A5#G07)(Week 1-5)<br />Tuesday 9.00am-11.00am(A4#G07)(Week 1-5)<br />Thursday 2.00pm-4.00pm(A2#G10)(Week 1-5)</td>
+      <td>48</td>
+      <td><span class="red">48</span></td>
+      <td>
+    Full
+          </td>
+    </tr>
+    <tr style="display: none" id="24090"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      <tr>
+        <th>Restriction</th>
+        <td>"•Note: The instruction and assessment will be conducted in Chinese (Mandarin) •Requirement :Chinese language proficiency at HSK Level 4 or an equivalent level or above.</td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G1118</td>
+      <td class="left"><a href="javascript:toggle('24089')">A Brief Introduction to Chinese Philosophy (Group 2)</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Lee Jian Yan</td>
+      <td class="left">Monday 3.00pm-5.00pm(A5#G07)(Week 1-5)<br />Tuesday 9.00am-11.00am(A4#G07)(Week 1-5)<br />Thursday 5.00pm-7.00pm(A2#G10)(Week 1-5)</td>
+      <td>48</td>
+      <td><span class="red">47</span></td>
+      <td>
+    <input type="button" value="Select"
+onclick="if(alert_yqzs('')) __doPostBack('Add','24089')"
+ />
+          </td>
+    </tr>
+    <tr style="display: none" id="24089"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      <tr>
+        <th>Restriction</th>
+        <td>"•Note: The instruction and assessment will be conducted in Chinese (Mandarin) •Requirement :Chinese language proficiency at HSK Level 4 or an equivalent level or above."</td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G0147</td>
+      <td class="left"><a href="javascript:toggle('24057')">Acting and Appreciation of Theatre</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Cavendish-Jones Colin Alastair</td>
+      <td class="left">Tuesday 2.00pm-4.00pm(A1#G02)(Week 1-5)<br />Wednesday 9.00am-11.00am(A1#G02)(Week 1-5)<br />Thursday 9.00am-11.00am(A1#G02)(Week 1-5)</td>
+      <td>38</td>
+      <td><span class="red">38</span></td>
+      <td>
+    Full
+          </td>
+    </tr>
+    <tr style="display: none" id="24057"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G1137</td>
+      <td class="left"><a href="javascript:toggle('24307')">Agentic AI and Workflow Automation for Everyone</a></td>
+      <td>Arts</td>
+      <td>3</td>
+      <td>1-5</td>
+      <td>Goh Sim Kuan</td>
+      <td class="left">Tuesday 3.00pm-6.00pm(A4#207)(Week 1-5)<br />Wednesday 10.00am-1.00pm(A4#G08)(Week 1-5)<br />Thursday 10.00am-1.00pm(A2#111)(Week 1-5)</td>
+      <td>90</td>
+      <td><span class="red">90</span></td>
+      <td>
+    Full
+          </td>
+    </tr>
+    <tr style="display: none" id="24307"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      <tr>
+        <th>Pre-requisite</th>
+        <td>Basic Understanding on Computing & Python</td>
+      </tr>
+      <tr>
+        <th>Restriction</th>
+        <td>Restriction: This course is offered ONLY to Business and Sciences programs second-year and above students</td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G0114</td>
+      <td class="left"><a href="javascript:toggle('24225')">American Society and Culture</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Selvamany Pahang A/P Gabriel Muthuswamy</td>
+      <td class="left">Monday 10.00am-1.00pm(A1#G06)(Week 1-5)<br />Wednesday 10.00am-1.00pm(A5#G03)(Week 1-5)</td>
+      <td>57</td>
+      <td><span class="red">37</span></td>
+      <td>
+    <input type="button" value="Select"
+onclick="if(alert_yqzs('')) __doPostBack('Add','24225')"
+ />
+          </td>
+    </tr>
+    <tr style="display: none" id="24225"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G0128</td>
+      <td class="left"><a href="javascript:toggle('24043')">Art and Science</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Wang Huiqiong</td>
+      <td class="left">Wednesday 9.00am-12.00pm(A2#103)(Week 1-5)<br />Thursday 9.00am-12.00pm(A5#G03)(Week 1-5)</td>
+      <td>57</td>
+      <td><span class="red">57</span></td>
+      <td>
+    Full
+          </td>
+    </tr>
+    <tr style="display: none" id="24043"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G0142</td>
+      <td class="left"><a href="javascript:toggle('24053')">Art Appreciation</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Khairul Hazrin Bin Hashim</td>
+      <td class="left">Monday 10.00am-12.00pm(A3#503)(Week 1-5)<br />Tuesday 10.00am-12.00pm(A3#507)(Week 1-5)<br />Wednesday 10.00am-12.00pm(A3#503)(Week 1-5)</td>
+      <td>48</td>
+      <td><span class="red">48</span></td>
+      <td>
+    Full
+          </td>
+    </tr>
+    <tr style="display: none" id="24053"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G1125</td>
+      <td class="left"><a href="javascript:toggle('24103')">Artificial Intelligence and Society</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Li Xiaowen</td>
+      <td class="left">Monday 3.00pm-5.00pm(A4#G06)(Week 1-5)<br />Tuesday 5.00pm-7.00pm(A4#103)(Week 1-5)<br />Thursday 2.00pm-4.00pm(A4#105)(Week 1-5)</td>
+      <td>76</td>
+      <td><span class="red">76</span></td>
+      <td>
+    Full
+          </td>
+    </tr>
+    <tr style="display: none" id="24103"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G0132</td>
+      <td class="left"><a href="javascript:toggle('24048')">Basic Korean Language (Group 1)</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Ngu Yeau Kwang</td>
+      <td class="left">Monday 4.00pm-6.00pm(A2#G04)(Week 1-5)<br />Tuesday 4.00pm-6.00pm(A5#110)(Week 1-5)<br />Wednesday 4.00pm-6.00pm(A2#G04)(Week 1-5)</td>
+      <td>29</td>
+      <td><span class="red">29</span></td>
+      <td>
+    Full
+          </td>
+    </tr>
+    <tr style="display: none" id="24048"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G0132</td>
+      <td class="left"><a href="javascript:toggle('24047')">Basic Korean Language (Group 2)</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Ngu Yeau Kwang</td>
+      <td class="left">Monday 6.00pm-8.00pm(A2#G04)(Week 1-5)<br />Tuesday 6.00pm-8.00pm(A5#110)(Week 1-5)<br />Wednesday 6.00pm-8.00pm(A2#G04)(Week 1-5)</td>
+      <td>29</td>
+      <td><span class="red">29</span></td>
+      <td>
+    Full
+          </td>
+    </tr>
+    <tr style="display: none" id="24047"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G1130</td>
+      <td class="left"><a href="javascript:toggle('24232')">Business Chinese (Group 1)</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Leong Chin Chai</td>
+      <td class="left">Tuesday 3.00pm-5.00pm(A3#502)(Week 1-5)<br />Wednesday 10.00am-12.00pm(A2#G08)(Week 1-5)<br />Thursday 10.00am-12.00pm(A2#G02)(Week 1-5)</td>
+      <td>29</td>
+      <td><span class="red">9</span></td>
+      <td>
+    <input type="button" value="Select"
+onclick="if(alert_yqzs('')) __doPostBack('Add','24232')"
+ />
+          </td>
+    </tr>
+    <tr style="display: none" id="24232"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      <tr>
+        <th>Restriction</th>
+        <td>"•Note: The Instruction and assessments are conducted in Chinese (Mandarin). •Restriction: This course is ONLY offered to non-native Chinese speaker with Chinese language level of HSK level 3 and above"</td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G1130</td>
+      <td class="left"><a href="javascript:toggle('24231')">Business Chinese (Group 2)</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Leong Chin Chai</td>
+      <td class="left">Tuesday 3.00pm-5.00pm(A3#502)(Week 1-5)<br />Wednesday 10.00am-12.00pm(A2#G08)(Week 1-5)<br />Thursday 2.00pm-4.00pm(A2#G02)(Week 1-5)</td>
+      <td>29</td>
+      <td><span class="red">0</span></td>
+      <td>
+    <input type="button" value="Select"
+onclick="if(alert_yqzs('')) __doPostBack('Add','24231')"
+ />
+          </td>
+    </tr>
+    <tr style="display: none" id="24231"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      <tr>
+        <th>Restriction</th>
+        <td>"•Note: The Instruction and assessments are conducted in Chinese (Mandarin). •Restriction: This course is ONLY offered to non-native Chinese speaker with Chinese language level of HSK level 3 and above"</td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G0148</td>
+      <td class="left"><a href="javascript:toggle('24059')">Car Culture (Group 1)</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Wang Yiju</td>
+      <td class="left">Monday 9.00am-11.00am(A3#618)(Week 1-5)<br />Wednesday 2.00pm-4.00pm(A4#111)(Week 1-5)<br />Friday 10.00am-12.00pm(A5#G01)(Week 1-5)</td>
+      <td>86</td>
+      <td><span class="red">86</span></td>
+      <td>
+    Full
+          </td>
+    </tr>
+    <tr style="display: none" id="24059"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G0148</td>
+      <td class="left"><a href="javascript:toggle('24058')">Car Culture (Group 2)</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Wang Yiju</td>
+      <td class="left">Tuesday 3.00pm-5.00pm(A2#G09)(Week 1-5)<br />Wednesday 10.00am-12.00pm(A4#111)(Week 1-5)<br />Thursday 10.00am-12.00pm(A1#204)(Week 1-5)</td>
+      <td>86</td>
+      <td><span class="red">86</span></td>
+      <td>
+    Full
+          </td>
+    </tr>
+    <tr style="display: none" id="24058"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G0163</td>
+      <td class="left"><a href="javascript:toggle('24065')">Chinese Epigraphy in Southeast Asia</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Hue Guan Thye</td>
+      <td class="left">Monday 5.00pm-7.00pm(A2#G07)(Week 1-5)<br />Tuesday 5.00pm-7.00pm(A1#213)(Week 1-5)<br />Wednesday 5.00pm-7.00pm(A3#508)(Week 1-5)</td>
+      <td>86</td>
+      <td><span class="red">86</span></td>
+      <td>
+    Full
+          </td>
+    </tr>
+    <tr style="display: none" id="24065"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G1129</td>
+      <td class="left"><a href="javascript:toggle('24230')">Chinese for Management (Group 1)</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Ma Xiaofeng</td>
+      <td class="left">Tuesday 1.00pm-3.00pm(A3#517)(Week 1-5)<br />Wednesday 9.00am-11.00am(A2#G04)(Week 1-5)<br />Thursday 9.00am-11.00am(A3#505)(Week 1-5)</td>
+      <td>29</td>
+      <td><span class="red">0</span></td>
+      <td>
+    <input type="button" value="Select"
+onclick="if(alert_yqzs('')) __doPostBack('Add','24230')"
+ />
+          </td>
+    </tr>
+    <tr style="display: none" id="24230"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      <tr>
+        <th>Restriction</th>
+        <td>"•Note: The Instruction and assessments are conducted in Chinese (Mandarin). •Restriction: This course is ONLY offered to non-native Chinese speaker with Chinese language level of HSK level 4 and above"</td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G1129</td>
+      <td class="left"><a href="javascript:toggle('24229')">Chinese for Management (Group 2)</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Ma Xiaofeng</td>
+      <td class="left">Tuesday 1.00pm-3.00pm(A3#517)(Week 1-5)<br />Wednesday 9.00am-11.00am(A2#G04)(Week 1-5)<br />Thursday 1.00pm-3.00pm(A3#505)(Week 1-5)</td>
+      <td>29</td>
+      <td><span class="red">6</span></td>
+      <td>
+    <input type="button" value="Select"
+onclick="if(alert_yqzs('')) __doPostBack('Add','24229')"
+ />
+          </td>
+    </tr>
+    <tr style="display: none" id="24229"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      <tr>
+        <th>Restriction</th>
+        <td>"•Note: The Instruction and assessments are conducted in Chinese (Mandarin). •Restriction: This course is ONLY offered to non-native Chinese speaker with Chinese language level of HSK level 4 and above"</td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G0179</td>
+      <td class="left"><a href="javascript:toggle('24070')">Chinese Seal Carving: Appreciation and Practice (Group 1)</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Ooi Bee Peng</td>
+      <td class="left">Monday 2.00pm-4.00pm(A3#502)(Week 1-5)<br />Tuesday 2.00pm-4.00pm(A3#503)(Week 1-5)<br />Thursday 10.00am-12.00pm(A5#108)(Week 1-5)</td>
+      <td>19</td>
+      <td><span class="red">19</span></td>
+      <td>
+    Full
+          </td>
+    </tr>
+    <tr style="display: none" id="24070"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      <tr>
+        <th>Restriction</th>
+        <td>Native proficiency in Chinese, or demonstrated ability in Chinese listening, reading, and writing; possession of SPM Chinese, UEC Chinese, or an equivalent qualification</td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G0179</td>
+      <td class="left"><a href="javascript:toggle('24069')">Chinese Seal Carving: Appreciation and Practice (Group 2)</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Ooi Bee Peng</td>
+      <td class="left">Monday 2.00pm-4.00pm(A3#502)(Week 1-5)<br />Tuesday 2.00pm-4.00pm(A3#503)(Week 1-5)<br />Thursday 1.00pm-3.00pm(A5#108)(Week 1-5)</td>
+      <td>19</td>
+      <td><span class="red">19</span></td>
+      <td>
+    Full
+          </td>
+    </tr>
+    <tr style="display: none" id="24069"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      <tr>
+        <th>Restriction</th>
+        <td>Native proficiency in Chinese, or demonstrated ability in Chinese listening, reading, and writing; possession of SPM Chinese, UEC Chinese, or an equivalent qualification</td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G0179</td>
+      <td class="left"><a href="javascript:toggle('24071')">Chinese Seal Carving: Appreciation and Practice (Group 3)</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Ooi Bee Peng</td>
+      <td class="left">Monday 2.00pm-4.00pm(A3#502)(Week 1-5)<br />Tuesday 2.00pm-4.00pm(A3#503)(Week 1-5)<br />Thursday 3.00pm-5.00pm(A5#108)(Week 1-5)</td>
+      <td>19</td>
+      <td><span class="red">19</span></td>
+      <td>
+    Full
+          </td>
+    </tr>
+    <tr style="display: none" id="24071"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      <tr>
+        <th>Restriction</th>
+        <td>Native proficiency in Chinese, or demonstrated ability in Chinese listening, reading, and writing; possession of SPM Chinese, UEC Chinese, or an equivalent qualification</td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G1133</td>
+      <td class="left"><a href="javascript:toggle('24237')">Chinese–Malay Bidirectional Translation: Introduction and Practice (Group 1)</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Koay Su In</td>
+      <td class="left">Monday 6.00pm-9.00pm(A1#G06)(Week 1-5)<br />Tuesday 9.00am-12.00pm(A4#G05)(Week 1-5)</td>
+      <td>29</td>
+      <td><span class="red">29</span></td>
+      <td>
+    Full
+          </td>
+    </tr>
+    <tr style="display: none" id="24237"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      <tr>
+        <th>Restriction</th>
+        <td>"Requirement: This course requires proficiency in Malay and Chinese  Restriction: This course is NOT available to students who have already completed G1107"</td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G1133</td>
+      <td class="left"><a href="javascript:toggle('24236')">Chinese–Malay Bidirectional Translation: Introduction and Practice (Group 2)</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Koay Su In</td>
+      <td class="left">Monday 6.00pm-9.00pm(A1#G06)(Week 1-5)<br />Thursday 2.00pm-5.00pm(A4#G10)(Week 1-5)</td>
+      <td>29</td>
+      <td><span class="red">29</span></td>
+      <td>
+    Full
+          </td>
+    </tr>
+    <tr style="display: none" id="24236"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      <tr>
+        <th>Restriction</th>
+        <td>"Requirement: This course requires proficiency in Malay and Chinese  Restriction: This course is NOT available to students who have already completed G1107"</td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G0156</td>
+      <td class="left"><a href="javascript:toggle('24063')">Cinematic Communication</a></td>
+      <td>Arts</td>
+      <td>3</td>
+      <td>1-5</td>
+      <td>Tham Jia Hao</td>
+      <td class="left">Monday 6.00pm-9.00pm(A5#G01)(Week 1-5)<br />Tuesday 6.00pm-9.00pm(A2#G09)(Week 1-5)<br />Thursday 6.00pm-9.00pm(A3#517)(Week 1-5)</td>
+      <td>76</td>
+      <td><span class="red">76</span></td>
+      <td>
+    Full
+          </td>
+    </tr>
+    <tr style="display: none" id="24063"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G0196</td>
+      <td class="left"><a href="javascript:toggle('24078')">Communication and Law in Malaysia</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Safrena Noreen Binti Abd Malek</td>
+      <td class="left">Monday 9.00am-11.00am(A4#207)(Week 1-5)<br />Wednesday 2.00pm-4.00pm(A2#104)(Week 1-5)<br />Friday 10.00am-12.00pm(A2#111)(Week 1-5)</td>
+      <td>67</td>
+      <td><span class="red">16</span></td>
+      <td>
+    <input type="button" value="Select"
+onclick="if(alert_yqzs('')) __doPostBack('Add','24078')"
+ />
+          </td>
+    </tr>
+    <tr style="display: none" id="24078"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G0131</td>
+      <td class="left"><a href="javascript:toggle('24046')">Communication Skills for Job Search (Group 1)</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Zulaikha Binti Zubir</td>
+      <td class="left">Wednesday 9.00am-12.00pm(A4#G10)(Week 1-5)<br />Thursday 10.00am-1.00pm(A4#207)(Week 1-5)</td>
+      <td>43</td>
+      <td><span class="red">43</span></td>
+      <td>
+    Full
+          </td>
+    </tr>
+    <tr style="display: none" id="24046"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G0131</td>
+      <td class="left"><a href="javascript:toggle('24045')">Communication Skills for Job Search (Group 2)</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Zulaikha Binti Zubir</td>
+      <td class="left">Wednesday 1.00pm-4.00pm(A4#G10)(Week 1-5)<br />Thursday 2.00pm-5.00pm(A4#207)(Week 1-5)</td>
+      <td>43</td>
+      <td><span class="red">43</span></td>
+      <td>
+    Full
+          </td>
+    </tr>
+    <tr style="display: none" id="24045"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G0102</td>
+      <td class="left"><a href="javascript:toggle('24026')">Cross-Cultural Communication</a></td>
+      <td>Arts</td>
+      <td>3</td>
+      <td>1-5</td>
+      <td>Saravanan A/L Nallappan</td>
+      <td class="left">Tuesday 2.00pm-5.00pm(A2#G06)(Week 1-5)<br />Wednesday 9.00am-12.00pm(A2#104)(Week 1-5)<br />Thursday 9.00am-12.00pm(A2#G06)(Week 1-5)</td>
+      <td>67</td>
+      <td><span class="red">67</span></td>
+      <td>
+    Full
+          </td>
+    </tr>
+    <tr style="display: none" id="24026"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G0192</td>
+      <td class="left"><a href="javascript:toggle('24075')">Culturology of Chinese Characters (Group 1)</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Tan Huey Meei</td>
+      <td class="left">Monday 12.00pm-2.00pm(A2#G01)(Week 1-5)<br />Tuesday 12.00pm-2.00pm(A1#G01)(Week 1-5)<br />Tuesday 3.00pm-5.00pm(A3#510)(Week 1-5)</td>
+      <td>48</td>
+      <td><span class="red">48</span></td>
+      <td>
+    Full
+          </td>
+    </tr>
+    <tr style="display: none" id="24075"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      <tr>
+        <th>Restriction</th>
+        <td>Note: The instruction and assessment will be conducted in Chinese (Mandarin) Requirement: Intermediate to advanced proficiency in Chinese</td>
+      </tr>
+      </table>
+    </td></tr>
+        <tr>
+      <td>G0192</td>
+      <td class="left"><a href="javascript:toggle('24074')">Culturology of Chinese Characters (Group 2)</a></td>
+      <td>Arts</td>
+      <td>2</td>
+      <td>1-5</td>
+      <td>Tan Huey Meei</td>
+      <td class="left">Monday 12.00pm-2.00pm(A2#G01)(Week 1-5)<br />Tuesday 12.00pm-2.00pm(A1#G01)(Week 1-5)<br />Wednesday 12.00pm-2.00pm(A3#513)(Week 1-5)</td>
+      <td>48</td>
+      <td><span class="red">48</span></td>
+      <td>
+    Full
+          </td>
+    </tr>
+    <tr style="display: none" id="24074"><td colspan="20">
+      <table cellpadding="0" class="desc">
+      <tr>
+        <th width="120">Remark</th>
+        <td></td>
+      </tr>
+      <tr>
+        <th>Restriction</th>
+        <td>Note: The instruction and assessment will be conducted in Chinese (Mandarin) Requirement: Intermediate to advanced proficiency in Chinese</td>
+      </tr>
+      </table>
+    </td></tr>
+        </tbody>
+    <tfoot>
+    <tr><td colspan="20" class="right">1-30/152&nbsp;[<span class="red">1</span>]<a href="javascript:__doPostBack('Page','2')">[2]</a><a href="javascript:__doPostBack('Page','3')">[3]</a><a href="javascript:__doPostBack('Page','4')">[4]</a><a href="javascript:__doPostBack('Page','5')">[5]</a><a href="javascript:__doPostBack('Page','6')">[6]</a>&nbsp;</td></tr>
+    </tfoot>
+  </table>
+  </div>
+</div>
+</form>
+<script>alert("Course has been taken, selection denied");</script>    </div>
+  </div>
+  <div id="footer">Copyright &copy; 2017 <a href="http://www.xmu.edu.my" target="_blank">Xiamen University Malaysia Campus</a>, All Rights Reserved</div>
+</div>
+</body>
+</html>
